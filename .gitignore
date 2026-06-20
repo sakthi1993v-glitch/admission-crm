@@ -5,4 +5,9 @@ node_modules/
 dist/
 electron-dist/
 *.exe
-C:\CRM-Build\
+*.bat
+*.nsh
+*.js
+*.html
+*.json
+*.css
