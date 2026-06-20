@@ -2,10 +2,23 @@ const http = require("http");
 const fs = require("fs");
 const path = require("path");
 const os = require("os");
+const https = require("https");
+
+// Load .env if present
+const envPath = path.join(__dirname, ".env");
+if (fs.existsSync(envPath)) {
+  fs.readFileSync(envPath, "utf8").split("\n").forEach((line) => {
+    const [k, ...v] = line.split("=");
+    if (k && v.length) process.env[k.trim()] = v.join("=").trim();
+  });
+}
+
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
 
 const port = Number(process.env.PORT || 3000);
-const root = __dirname;
+const root = process.env.CRM_DATA_DIR || (process.pkg ? path.dirname(process.execPath) : __dirname);
 const dbPath = path.join(root, "data.json");
+const indexHtml = fs.readFileSync(path.join(__dirname, "index.html"));
 
 function defaultConfig() {
   return {
@@ -163,6 +176,50 @@ const server = http.createServer(async (req, res) => {
       return sendJson(res, { imported: mapped.length });
     }
 
+    if (url.pathname === "/api/scan-photo" && req.method === "POST") {
+      const body = await readJsonBody(req);
+      const { imageBase64, mimeType = "image/jpeg" } = body;
+      if (!imageBase64) return sendJson(res, { error: "No image" }, 400);
+
+      const prompt = `This is a handwritten notes page from a college admission staff member in India.
+Extract ALL student leads from this image. For each student, identify:
+- name (student name)
+- phone (mobile number, 10 digits)
+- area (city/town/village)
+- group (12th standard group: Bio Maths, Computer Science, Commerce, Arts, Pure Science, Vocational)
+- community (OC/BC/BCM/MBC/SC/SCA/ST)
+- firstGraduate (Yes/No/Not Sure)
+- course (interested course: B.Tech, MBBS, B.Sc, BCA, B.Com, BA, etc.)
+- college (interested college name if mentioned)
+- callResult (based on feedback: "Interested", "Not Interested", "Call Later", "Coming to College", "Admission Done")
+- category (one of: Interested, Not Interested, Engineering, Medical, Arts, Counselling, Joined)
+- notes (any other feedback or remarks)
+
+Category rules:
+- "Interested" or follow up needed → category: Interested
+- "Not interested", "not coming" → category: Not Interested
+- Engineering college joined or interested → category: Engineering
+- Medical/MBBS/Nursing → category: Medical
+- Arts/BA/B.Com → category: Arts
+- "Counselling pakkanum", "doubt iruku", "decide pannala" → category: Counselling
+- Already joined somewhere → category: Joined
+
+Return ONLY a JSON array like:
+[{"name":"...","phone":"...","area":"...","group":"...","community":"...","firstGraduate":"...","course":"...","college":"...","callResult":"...","category":"...","notes":"..."}]
+
+If a field is not mentioned, use empty string "". Extract ALL students visible in the notes.`;
+
+      try {
+        const result = await callGemini(imageBase64, mimeType, prompt);
+        const jsonMatch = result.match(/\[[\s\S]*\]/);
+        if (!jsonMatch) return sendJson(res, { error: "Could not parse response", raw: result }, 500);
+        const leads = JSON.parse(jsonMatch[0]);
+        return sendJson(res, { leads });
+      } catch (err) {
+        return sendJson(res, { error: err.message }, 500);
+      }
+    }
+
     if (url.pathname === "/api/reset" && req.method === "POST") {
       const db = readDb();
       writeDb({ leads: seedLeads, config: db.config || defaultConfig() });
@@ -178,11 +235,10 @@ const server = http.createServer(async (req, res) => {
 
 server.on("error", (error) => {
   if (error.code === "EADDRINUSE") {
-    console.error(`Port ${port} is already in use. Close old CRM windows or run stop-crm.bat, then start again.`);
-    process.exit(1);
+    console.error(`Port ${port} is already in use.`);
+    return;
   }
   console.error(error);
-  process.exit(1);
 });
 
 server.listen(port, "0.0.0.0", () => {
@@ -193,25 +249,17 @@ server.listen(port, "0.0.0.0", () => {
 });
 
 function serveStatic(pathname, res) {
-  const requested = pathname === "/" ? "index.html" : pathname.slice(1);
-  const filePath = path.resolve(root, requested);
-
-  if (!filePath.startsWith(root)) {
-    res.writeHead(403);
-    res.end("Forbidden");
+  if (pathname === "/" || pathname === "/index.html") {
+    res.writeHead(200, {
+      "Content-Type": "text/html; charset=utf-8",
+      "Cache-Control": "no-store, no-cache, must-revalidate",
+      "Pragma": "no-cache"
+    });
+    res.end(indexHtml);
     return;
   }
-
-  fs.readFile(filePath, (error, content) => {
-    if (error) {
-      res.writeHead(404);
-      res.end("Not found");
-      return;
-    }
-
-    res.writeHead(200, { "Content-Type": contentType(filePath) });
-    res.end(content);
-  });
+  res.writeHead(404);
+  res.end("Not found");
 }
 
 function ensureDb() {
@@ -255,7 +303,11 @@ function normalizeLead(lead) {
     visitDate: String(lead.visitDate || "").trim(),
     admissionDoneDate: String(lead.admissionDoneDate || "").trim(),
     callsDone: Number(lead.callsDone || 0),
-    notes: String(lead.notes || "").trim()
+    notes: String(lead.notes || "").trim(),
+    totalFee: Number(lead.totalFee || 0),
+    feePaid: Number(lead.feePaid || 0),
+    feeStatus: String(lead.feeStatus || "Pending").trim(),
+    paymentDate: String(lead.paymentDate || "").trim()
   };
 }
 
@@ -297,6 +349,41 @@ function contentType(filePath) {
 
 function todayIso() {
   return new Date().toISOString().slice(0, 10);
+}
+
+function callGemini(imageBase64, mimeType, prompt) {
+  return new Promise((resolve, reject) => {
+    const body = JSON.stringify({
+      contents: [{
+        parts: [
+          { text: prompt },
+          { inline_data: { mime_type: mimeType, data: imageBase64 } }
+        ]
+      }]
+    });
+
+    const options = {
+      hostname: "generativelanguage.googleapis.com",
+      path: `/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(body) }
+    };
+
+    const req = https.request(options, (r) => {
+      let data = "";
+      r.on("data", (chunk) => { data += chunk; });
+      r.on("end", () => {
+        try {
+          const parsed = JSON.parse(data);
+          const text = parsed.candidates?.[0]?.content?.parts?.[0]?.text || "";
+          resolve(text);
+        } catch (e) { reject(new Error("Gemini parse error: " + data)); }
+      });
+    });
+    req.on("error", reject);
+    req.write(body);
+    req.end();
+  });
 }
 
 function localAddresses() {

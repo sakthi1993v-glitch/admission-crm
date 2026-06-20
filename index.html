@@ -95,7 +95,7 @@
 
     .tabs {
       display: grid;
-      grid-template-columns: repeat(6, minmax(96px, 1fr));
+      grid-template-columns: repeat(7, minmax(96px, 1fr));
       gap: 8px;
       overflow-x: auto;
       padding: 10px 14px 12px;
@@ -531,11 +531,123 @@
       gap: 8px;
       margin-bottom: 14px;
     }
+
+    .analytics-grid {
+      display: grid;
+      gap: 14px;
+    }
+
+    .analytics-card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 16px;
+      box-shadow: var(--shadow);
+    }
+
+    .analytics-card h3 {
+      margin: 0 0 14px;
+      font-size: 15px;
+      color: var(--text);
+    }
+
+    .bar-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+      font-size: 13px;
+    }
+
+    .bar-label {
+      width: 120px;
+      flex-shrink: 0;
+      color: var(--muted);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .bar-track {
+      flex: 1;
+      height: 18px;
+      background: #eef1f5;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .bar-fill {
+      height: 100%;
+      border-radius: 4px;
+      transition: width 0.4s ease;
+    }
+
+    .bar-count {
+      width: 32px;
+      text-align: right;
+      font-weight: 800;
+      color: var(--text);
+    }
+
+    @media (min-width: 760px) {
+      .analytics-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
   </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
 <body>
-  <header>
+  <!-- Staff Login Page (shown on mobile by default) -->
+  <div id="staffLoginPage" style="min-height:100vh;background:#f5f6f8;display:flex;align-items:center;justify-content:center;padding:20px">
+    <div class="login-box" style="text-align:center">
+      <div style="font-size:40px;margin-bottom:8px">🎓</div>
+      <h2 style="margin:0 0 4px">Admission CRM</h2>
+      <p class="login-subtitle">உங்கள் பேரு select பண்ணி PIN போடுங்க</p>
+      <div class="field" style="margin-top:16px;text-align:left">
+        <label>உங்கள் பேர்</label>
+        <select id="staffLoginName" style="font-size:16px"></select>
+      </div>
+      <div class="field" style="text-align:left">
+        <label>PIN</label>
+        <input type="password" id="staffLoginPin" placeholder="4 digit PIN" maxlength="4" inputmode="numeric" autocomplete="off" style="font-size:22px;letter-spacing:10px;text-align:center">
+      </div>
+      <div id="staffLoginErr" class="login-error" style="display:none">❌ Wrong PIN. Try again.</div>
+      <button class="btn update" type="button" id="staffLoginBtn" style="width:100%;margin-top:14px;min-height:52px;font-size:16px">Login →</button>
+    </div>
+  </div>
+
+  <!-- Scan Notes Modal -->
+  <div id="scanModal" style="display:none;position:fixed;inset:0;background:rgba(24,34,48,0.95);z-index:998;overflow-y:auto;padding:16px">
+    <div style="max-width:480px;margin:0 auto">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <h2 style="color:#fff;margin:0">📸 Scan Notes</h2>
+        <button onclick="closeScanModal()" style="background:none;border:none;color:#fff;font-size:24px;cursor:pointer">✕</button>
+      </div>
+
+      <div id="scanUploadArea" style="background:#fff;border-radius:12px;padding:20px;text-align:center;margin-bottom:12px">
+        <div style="font-size:48px;margin-bottom:8px">📄</div>
+        <p style="color:#667085;margin:0 0 12px">Notes photo எடுத்து upload பண்ணுங்க</p>
+        <input type="file" id="scanPhotoInput" accept="image/*" capture="environment" style="display:none" onchange="handleScanPhoto(this)">
+        <button class="btn update" onclick="document.getElementById('scanPhotoInput').click()" style="width:100%;min-height:48px;font-size:16px">📷 Photo எடு / Upload</button>
+      </div>
+
+      <div id="scanLoading" style="display:none;background:#fff;border-radius:12px;padding:20px;text-align:center">
+        <div style="font-size:32px;margin-bottom:8px">🤖</div>
+        <p style="color:#667085;margin:0">AI படிக்குது... கொஞ்சம் wait பண்ணுங்க</p>
+      </div>
+
+      <div id="scanResults" style="display:none">
+        <h3 style="color:#fff;margin:0 0 12px">Found Leads — Review & Save</h3>
+        <div id="scanLeadsList"></div>
+        <button class="btn update" id="scanSaveBtn" onclick="saveScannedLeads()" style="width:100%;min-height:52px;font-size:16px;margin-top:12px">✅ எல்லாம் Save பண்ணு</button>
+      </div>
+
+      <div id="scanError" style="display:none;background:#fde8e7;border-radius:12px;padding:16px;color:#b42318;text-align:center"></div>
+    </div>
+  </div>
+
+  <header id="mainHeader" style="display:none">
     <div class="topbar">
       <h1>Admission Follow-up CRM</h1>
       <div class="subline" id="todayText"></div>
@@ -555,10 +667,11 @@
       <button class="tab" data-view="hot">Hot Leads</button>
       <button class="tab" data-view="missed">Missed</button>
       <button class="tab" data-view="manager">Manager</button>
+      <button class="tab" data-view="analytics" id="analyticsTab">Analytics</button>
     </nav>
   </header>
 
-  <main>
+  <main id="mainContent" style="display:none">
     <section id="managerTools" hidden>
       <div class="connect-box" id="connectBox">
         <h3>Staff Connect</h3>
@@ -575,29 +688,20 @@
         <button class="btn secondary" type="button" id="exportBtn">Export CSV</button>
         <button class="btn secondary" type="button" id="manageStaffBtn">Manage Staff</button>
         <button class="btn danger" type="button" id="resetBtn">Reset Demo</button>
+        <button class="btn secondary" type="button" onclick="clearAppCache()">🗑️ Clear Cache</button>
+      </div>
+      <div id="cacheStatusBox" style="display:none;background:#e8f7ef;border:1px solid #a6e0bc;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:13px;color:#067647;font-weight:700">
+        ✅ Cache cleared! App fresh-ஆ load ஆகும்.
       </div>
     </section>
+    <div id="staffScanBar" style="display:none;padding:0 0 12px">
+      <button class="btn update" onclick="openScanModal()" style="width:100%;min-height:52px;font-size:16px;background:#7c3aed">📸 Notes Scan பண்ணு</button>
+    </div>
     <section class="stats" id="stats"></section>
     <section class="list" id="leadList"></section>
     <section class="staff-grid" id="managerList" hidden></section>
   </main>
 
-  <div id="staffLoginOverlay" hidden>
-    <div class="login-box">
-      <h2>Staff Login</h2>
-      <p class="login-subtitle">உங்கள் பேரு select பண்ணி PIN போடுங்க</p>
-      <div class="field" style="margin-top:4px">
-        <label>Your Name</label>
-        <select id="staffLoginName"></select>
-      </div>
-      <div class="field">
-        <label>PIN</label>
-        <input type="password" id="staffLoginPin" placeholder="PIN (default: 1234)" maxlength="4" inputmode="numeric" autocomplete="off">
-      </div>
-      <div id="staffLoginErr" class="login-error" hidden>Wrong PIN. Try again.</div>
-      <button class="btn update" type="button" onclick="doStaffPinLogin()" style="width:100%;margin-top:12px;min-height:48px;font-size:16px">Login</button>
-    </div>
-  </div>
 
   <dialog id="studentDialog">
     <form class="modal" method="dialog" id="studentForm">
@@ -766,7 +870,33 @@
 
       <div class="field">
         <label for="notesInput">Staff Notes</label>
-        <textarea id="notesInput" rows="4" placeholder="Student/parent discussion, fee concern, visit promise"></textarea>
+        <textarea id="notesInput" rows="3" placeholder="Student/parent discussion, fee concern, visit promise"></textarea>
+      </div>
+
+      <div style="border-top:1px solid var(--line);padding-top:12px;margin-top:4px">
+        <div style="font-size:13px;font-weight:800;color:var(--muted);margin-bottom:8px">💰 Fee Details</div>
+        <div class="form-grid">
+          <div class="field">
+            <label for="totalFeeInput">Total Fee (₹)</label>
+            <input id="totalFeeInput" type="number" min="0" placeholder="0">
+          </div>
+          <div class="field">
+            <label for="feePaidInput">Fee Paid (₹)</label>
+            <input id="feePaidInput" type="number" min="0" placeholder="0">
+          </div>
+          <div class="field">
+            <label for="feeStatusInput">Fee Status</label>
+            <select id="feeStatusInput">
+              <option>Pending</option>
+              <option>Partial</option>
+              <option>Paid</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="paymentDateInput">Payment Date</label>
+            <input id="paymentDateInput" type="date">
+          </div>
+        </div>
       </div>
 
       <div class="modal-actions">
@@ -921,6 +1051,7 @@
     ];
 
     let leads = [];
+    let loggedInStaff = null;
 
     const roleFilter = document.getElementById("roleFilter");
     const staffFilter = document.getElementById("staffFilter");
@@ -1001,6 +1132,10 @@
         lead.course = document.getElementById("courseInput").value.trim();
         lead.college = document.getElementById("collegeInput").value.trim();
         lead.notes = document.getElementById("notesInput").value.trim();
+        lead.totalFee = Number(document.getElementById("totalFeeInput").value || 0);
+        lead.feePaid = Number(document.getElementById("feePaidInput").value || 0);
+        lead.feeStatus = document.getElementById("feeStatusInput").value;
+        lead.paymentDate = document.getElementById("paymentDateInput").value || "";
         lead.lastCall = isoToday;
         lead.callsDone += 1;
 
@@ -1134,23 +1269,39 @@
     }
 
     function renderStaffOptions() {
-      const current = staffFilter.value || "All Staff";
       const realStaff = [...new Set(leads.map((lead) => lead.staff))];
-      const staffNames = roleFilter.value === "Staff" ? realStaff : ["All Staff", ...realStaff];
-      staffFilter.innerHTML = staffNames.map((name) => `<option>${name}</option>`).join("");
-      staffFilter.value = staffNames.includes(current) ? current : staffNames[0] || "All Staff";
+
+      if (loggedInStaff) {
+        // Staff logged in — lock to their name only
+        staffFilter.innerHTML = `<option>${loggedInStaff}</option>`;
+        staffFilter.value = loggedInStaff;
+        staffFilter.disabled = true;
+      } else {
+        staffFilter.disabled = false;
+        const current = staffFilter.value || "All Staff";
+        const staffNames = roleFilter.value === "Staff" ? realStaff : ["All Staff", ...realStaff];
+        staffFilter.innerHTML = staffNames.map((name) => `<option>${name}</option>`).join("");
+        staffFilter.value = staffNames.includes(current) ? current : staffNames[0] || "All Staff";
+      }
     }
 
     function renderStats() {
       const selectedStaff = staffFilter.value;
       const scoped = selectedStaff === "All Staff" ? leads : leads.filter((lead) => lead.staff === selectedStaff);
+      const totalCollected = scoped.reduce((sum, l) => sum + (l.feePaid || 0), 0);
+      const feeStatLabel = totalCollected >= 100000
+        ? `₹${(totalCollected/100000).toFixed(1)}L`
+        : totalCollected >= 1000
+        ? `₹${(totalCollected/1000).toFixed(1)}K`
+        : `₹${totalCollected}`;
+
       const statItems = [
         ["Today", scoped.filter(isTodayCall).length],
         ["Missed", scoped.filter(isMissed).length],
         ["Visit", scoped.filter(isVisitExpected).length],
         ["Hot", scoped.filter(isHot).length],
-        ["Called Today", scoped.filter((lead) => lead.lastCall === isoToday).length],
-        ["Admission", scoped.filter((lead) => lead.admissionDoneDate === isoToday).length]
+        ["Admission", scoped.filter((lead) => lead.admissionDoneDate === isoToday).length],
+        ["Fee Collected", feeStatLabel]
       ];
 
       stats.innerHTML = statItems.map(([label, value]) => `
@@ -1163,10 +1314,15 @@
 
     function renderLeadList() {
       managerList.hidden = activeView !== "manager";
-      leadList.hidden = activeView === "manager";
+      leadList.hidden = activeView === "manager" || activeView === "analytics";
 
       if (activeView === "manager") {
         renderManagerList();
+        return;
+      }
+
+      if (activeView === "analytics") {
+        renderAnalytics();
         return;
       }
 
@@ -1183,7 +1339,7 @@
       const stateClass = isAdmissionDone(lead) ? "done-card" : isMissed(lead) ? "missed" : isVisitExpected(lead) ? "visit" : isHot(lead) ? "hot" : "";
       const badgeClass = stateClass || "normal";
       const badgeText = isAdmissionDone(lead) ? "Admission" : isMissed(lead) ? "Missed" : isVisitExpected(lead) ? "Visit" : isHot(lead) ? "Hot" : "Lead";
-      const message = encodeURIComponent(`Hi ${lead.student}, this is ${lead.staff}. I am following up about your ${lead.course} admission at ${lead.college}.`);
+      const message = encodeURIComponent(getWhatsAppMessage(lead));
 
       return `
         <article class="card ${stateClass}">
@@ -1207,12 +1363,116 @@
             <div><b>Calls</b>${lead.callsDone}</div>
           </div>
           <div class="notes">${escapeHtml(lead.notes || "No notes")}</div>
+          ${lead.totalFee > 0 ? `
+          <div style="margin-top:8px;padding:8px 10px;background:${lead.feeStatus === 'Paid' ? 'var(--green-soft)' : lead.feeStatus === 'Partial' ? 'var(--amber-soft)' : 'var(--red-soft)'};border-radius:6px;font-size:13px;display:flex;justify-content:space-between;align-items:center">
+            <span>💰 Fee: ₹${lead.feePaid.toLocaleString()} / ₹${lead.totalFee.toLocaleString()}</span>
+            <span style="font-weight:800;color:${lead.feeStatus === 'Paid' ? 'var(--green)' : lead.feeStatus === 'Partial' ? 'var(--amber)' : 'var(--red)'}">${lead.feeStatus}</span>
+          </div>` : ''}
           <div class="actions">
             <a class="btn call" href="tel:+${lead.phone}">Call</a>
             <a class="btn wa" href="https://wa.me/${lead.phone}?text=${message}" target="_blank" rel="noopener">WhatsApp</a>
             <button class="btn update" type="button" onclick="openUpdate(${lead.id})">Update</button>
           </div>
         </article>
+      `;
+    }
+
+    function renderAnalytics() {
+      const scoped = staffFilter.value === "All Staff" ? leads : leads.filter((l) => l.staff === staffFilter.value);
+
+      // 1. Staff performance
+      const staffNames = [...new Set(leads.map((l) => l.staff))];
+      const maxAdmission = Math.max(1, ...staffNames.map((n) => leads.filter((l) => l.staff === n && l.admissionDoneDate).length));
+      const staffRows = staffNames.map((name) => {
+        const owned = leads.filter((l) => l.staff === name);
+        const admissions = owned.filter((l) => l.admissionDoneDate).length;
+        const totalCalls = owned.reduce((s, l) => s + (l.callsDone || 0), 0);
+        const hot = owned.filter(isHot).length;
+        const pct = Math.round((admissions / maxAdmission) * 100);
+        return `<div class="bar-row">
+          <div class="bar-label" title="${escapeHtml(name)}">${escapeHtml(name)}</div>
+          <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:#067647"></div></div>
+          <div class="bar-count">${admissions}</div>
+          <div style="font-size:12px;color:var(--muted);width:80px">${totalCalls} calls · ${hot} hot</div>
+        </div>`;
+      }).join("");
+
+      // 2. Call result breakdown
+      const resultMap = {};
+      scoped.forEach((l) => { resultMap[l.callResult] = (resultMap[l.callResult] || 0) + 1; });
+      const resultColors = {
+        "Admission Done": "#067647", "Coming to College": "#175cd3", "Interested": "#0e9f6e",
+        "Call Later": "#946200", "No Response": "#667085", "Not Interested": "#b42318",
+        "Parent Need to Speak": "#7c3aed", "Visited": "#175cd3", "New Lead": "#98a2b3"
+      };
+      const maxResult = Math.max(1, ...Object.values(resultMap));
+      const resultRows = Object.entries(resultMap)
+        .sort((a, b) => b[1] - a[1])
+        .map(([result, count]) => {
+          const pct = Math.round((count / maxResult) * 100);
+          const color = resultColors[result] || "#98a2b3";
+          return `<div class="bar-row">
+            <div class="bar-label" title="${escapeHtml(result)}">${escapeHtml(result)}</div>
+            <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${color}"></div></div>
+            <div class="bar-count">${count}</div>
+          </div>`;
+        }).join("");
+
+      // 3. Community breakdown
+      const commMap = {};
+      scoped.forEach((l) => { commMap[l.community] = (commMap[l.community] || 0) + 1; });
+      const maxComm = Math.max(1, ...Object.values(commMap));
+      const commRows = Object.entries(commMap).sort((a, b) => b[1] - a[1]).map(([c, n]) =>
+        `<div class="bar-row">
+          <div class="bar-label">${escapeHtml(c)}</div>
+          <div class="bar-track"><div class="bar-fill" style="width:${Math.round(n/maxComm*100)}%;background:#175cd3"></div></div>
+          <div class="bar-count">${n}</div>
+        </div>`
+      ).join("");
+
+      // 4. Group breakdown
+      const groupMap = {};
+      scoped.forEach((l) => { groupMap[l.group] = (groupMap[l.group] || 0) + 1; });
+      const maxGroup = Math.max(1, ...Object.values(groupMap));
+      const groupRows = Object.entries(groupMap).sort((a, b) => b[1] - a[1]).map(([g, n]) =>
+        `<div class="bar-row">
+          <div class="bar-label" title="${escapeHtml(g)}">${escapeHtml(g)}</div>
+          <div class="bar-track"><div class="bar-fill" style="width:${Math.round(n/maxGroup*100)}%;background:#7c3aed"></div></div>
+          <div class="bar-count">${n}</div>
+        </div>`
+      ).join("");
+
+      // Summary numbers
+      const total = scoped.length;
+      const admitted = scoped.filter((l) => l.admissionDoneDate).length;
+      const convRate = total ? Math.round((admitted / total) * 100) : 0;
+      const totalFeeCollected = scoped.reduce((s, l) => s + (l.feePaid || 0), 0);
+      const feeLabel = totalFeeCollected >= 100000
+        ? `₹${(totalFeeCollected/100000).toFixed(1)}L`
+        : `₹${(totalFeeCollected/1000).toFixed(1)}K`;
+
+      managerList.hidden = true;
+      leadList.hidden = false;
+      leadList.innerHTML = `
+        <div style="grid-column:1/-1;display:flex;gap:10px;flex-wrap:wrap;margin-bottom:4px">
+          ${[["Total Leads", total],["Admitted", admitted],["Conversion", convRate+"%"],["Fee Collected", feeLabel]]
+            .map(([l,v]) => `<div style="background:#fff;border:1px solid var(--line);border-radius:8px;padding:12px 18px;flex:1;min-width:100px;box-shadow:var(--shadow)">
+              <strong style="font-size:22px;display:block">${v}</strong><span style="color:var(--muted);font-size:13px">${l}</span></div>`).join("")}
+        </div>
+        <div class="analytics-grid" style="grid-column:1/-1">
+          <div class="analytics-card">
+            <h3>Staff Admissions</h3>${staffRows}
+          </div>
+          <div class="analytics-card">
+            <h3>Call Results</h3>${resultRows}
+          </div>
+          <div class="analytics-card">
+            <h3>Community Breakdown</h3>${commRows}
+          </div>
+          <div class="analytics-card">
+            <h3>12th Group Breakdown</h3>${groupRows}
+          </div>
+        </div>
       `;
     }
 
@@ -1366,7 +1626,47 @@
       document.getElementById("courseInput").value = lead.course;
       document.getElementById("collegeInput").value = lead.college;
       document.getElementById("notesInput").value = lead.notes;
+      document.getElementById("totalFeeInput").value = lead.totalFee || 0;
+      document.getElementById("feePaidInput").value = lead.feePaid || 0;
+      document.getElementById("feeStatusInput").value = lead.feeStatus || "Pending";
+      document.getElementById("paymentDateInput").value = lead.paymentDate || "";
       dialog.showModal();
+    }
+
+    function getWhatsAppMessage(lead) {
+      const name = lead.student;
+      const staff = lead.staff;
+      const course = lead.course || "course";
+      const college = lead.college || "our college";
+      const time = lead.nextTime || "10:00";
+      const date = lead.nextDate || isoToday;
+
+      switch (lead.callResult) {
+        case "New Lead":
+        case "Interested":
+          return `வணக்கம் ${name} அவர்களே 🙏\n\nநான் ${staff}, ${college} இல் இருந்து பேசுகிறேன்.\n\n${course} சேர்வதில் உங்களுக்கு ஆர்வம் இருக்கிறதாக தெரிந்தது. நாங்கள் உங்களுக்கு உதவ தயாராக இருக்கிறோம்.\n\nகொஞ்சம் நேரம் இருந்தால் பேசலாமா? 📞`;
+
+        case "Call Later":
+          return `வணக்கம் ${name} அவர்களே 🙏\n\n${staff} இங்கிருந்து பேசுகிறேன். நீங்கள் ${date} அன்று ${time} மணிக்கு call பண்ணுங்கள் என்று சொன்னீர்கள்.\n\nஇப்போது பேச முடியுமா? 😊`;
+
+        case "No Response":
+          return `வணக்கம் ${name} அவர்களே 🙏\n\n${staff} இங்கிருந்து. உங்களை தொடர்பு கொள்ள முயற்சித்தோம். Busy-ஆக இருந்தால் பரவாயில்லை.\n\nசெளகரியமான நேரத்தில் திரும்ப call பண்ணுங்கள் 🙏`;
+
+        case "Parent Need to Speak":
+          return `வணக்கம் 🙏\n\n${name} பெற்றோர்களுக்கு ${staff} இங்கிருந்து.\n\n${course} சேர்வது பற்றி பேசணும் என்று ${name} சொன்னார்கள். உங்களுக்கு வசதியான நேரம் எப்போது? 😊`;
+
+        case "Coming to College":
+          return `வணக்கம் ${name} அவர்களே 🙏\n\n${college}-க்கு வருவதாக சொன்னீர்கள், மிக்க மகிழ்ச்சி! 😊\n\n${date} அன்று ${time} மணிக்கு வாருங்கள். எங்களுக்கு தெரியப்படுத்துங்கள் 🙏`;
+
+        case "Not Interested":
+          return `வணக்கம் ${name} அவர்களே 🙏\n\nஆர்வம் இல்லை என்று தெரிந்தது, பரவாயில்லை.\n\nஎதிர்காலத்தில் எந்த உதவியும் தேவைப்பட்டால் தொடர்பு கொள்ளுங்கள் 🙏\n\n- ${staff}`;
+
+        case "Admission Done":
+          return `வணக்கம் ${name} அவர்களே 🙏\n\n${college}-ல் சேர்ந்தமைக்கு வாழ்த்துக்கள்! 🎉\n\nசந்தேகம் ஏதும் இருந்தால் தொடர்பு கொள்ளுங்கள். வாழ்த்துக்கள்! 😊`;
+
+        default:
+          return `வணக்கம் ${name} அவர்களே 🙏\n\n${staff} இங்கிருந்து, ${college}.\n\n${course} admission பற்றி பேச வேண்டும். நேரம் இருக்கிறதா? 📞`;
+      }
     }
 
     function escapeHtml(value) {
@@ -1380,16 +1680,115 @@
 
     function render() {
       renderStaffOptions();
-      managerTools.hidden = roleFilter.value !== "Manager";
-      if (roleFilter.value === "Staff" && activeView === "manager") {
+      const isManager = !loggedInStaff && roleFilter.value === "Manager";
+      managerTools.hidden = !isManager;
+
+      // Hide manager and analytics tabs for staff
+      document.querySelectorAll(".tab[data-view='manager'], .tab[data-view='analytics']").forEach((t) => {
+        t.style.display = loggedInStaff ? "none" : "";
+      });
+
+      if (!isManager && (activeView === "manager" || activeView === "analytics")) {
         activeView = "today";
         document.querySelectorAll(".tab").forEach((item) => item.classList.toggle("active", item.dataset.view === "today"));
       }
+
+      // Show/hide logout button for staff
+      let logoutBtn = document.getElementById("staffLogoutBtn");
+      if (loggedInStaff) {
+        if (!logoutBtn) {
+          logoutBtn = document.createElement("button");
+          logoutBtn.id = "staffLogoutBtn";
+          logoutBtn.className = "logout-btn";
+          logoutBtn.textContent = `👤 ${loggedInStaff} — Logout`;
+          logoutBtn.onclick = () => {
+            sessionStorage.removeItem("staffAuth");
+            loggedInStaff = null;
+            location.reload();
+          };
+          document.querySelector(".topbar").appendChild(logoutBtn);
+        }
+      } else if (logoutBtn) {
+        logoutBtn.remove();
+      }
+
       renderStats();
       renderLeadList();
     }
 
     window.openUpdate = openUpdate;
+
+    // ---- Auto Reminder ----
+    let reminderInterval = null;
+
+    async function setupReminders() {
+      if (!("Notification" in window)) return;
+
+      if (Notification.permission === "default") {
+        await Notification.requestPermission();
+      }
+
+      if (Notification.permission !== "granted") return;
+
+      // Check every minute
+      if (reminderInterval) clearInterval(reminderInterval);
+      reminderInterval = setInterval(checkReminders, 60 * 1000);
+      checkReminders();
+    }
+
+    function checkReminders() {
+      if (!leads.length) return;
+
+      const now = new Date();
+      const todayStr = toISODate(now);
+      const currentHour = now.getHours();
+      const currentMin = now.getMinutes();
+
+      const myLeads = loggedInStaff
+        ? leads.filter((l) => l.staff === loggedInStaff)
+        : leads;
+
+      myLeads.forEach((lead) => {
+        if (!lead.nextDate || !lead.nextTime) return;
+
+        // Upcoming call reminder — notify 5 mins before
+        if (lead.nextDate === todayStr) {
+          const [h, m] = lead.nextTime.split(":").map(Number);
+          const diffMins = (h * 60 + m) - (currentHour * 60 + currentMin);
+          if (diffMins === 5) {
+            showNotification(
+              `📞 Call Reminder — ${lead.student}`,
+              `${lead.nextTime}-ல் call பண்ணணும். ${lead.area} | ${lead.course}`
+            );
+          }
+        }
+
+        // Missed call reminder — past due, not admission done
+        if (lead.nextDate < todayStr && !isAdmissionDone(lead) && lead.callResult !== "Not Interested") {
+          const lastNotified = localStorage.getItem(`reminded_${lead.id}`);
+          const twoHoursAgo = Date.now() - 2 * 60 * 60 * 1000;
+          if (!lastNotified || Number(lastNotified) < twoHoursAgo) {
+            showNotification(
+              `⚠️ Missed Follow-up — ${lead.student}`,
+              `${lead.nextDate} அன்று call பண்ணணும்னு இருந்தது. இன்னும் பண்ணலை!`
+            );
+            localStorage.setItem(`reminded_${lead.id}`, Date.now());
+          }
+        }
+      });
+    }
+
+    function showNotification(title, body) {
+      if (Notification.permission !== "granted") return;
+      const n = new Notification(title, {
+        body,
+        icon: "/icon.ico",
+        badge: "/icon.ico",
+        vibrate: [200, 100, 200]
+      });
+      n.onclick = () => { window.focus(); n.close(); };
+      setTimeout(() => n.close(), 10000);
+    }
 
     // ---- Auth ----
     let cachedConfig = null;
@@ -1610,12 +2009,230 @@
       alert("Password updated!");
     }
 
+    // ---- Staff PIN Login ----
+    function isOnLaptop() {
+      const h = location.hostname;
+      return h === "localhost" || h === "127.0.0.1";
+    }
+
+    function showMainApp() {
+      document.getElementById("staffLoginPage").style.display = "none";
+      document.getElementById("mainHeader").style.display = "";
+      document.getElementById("mainContent").style.display = "";
+      if (loggedInStaff) {
+        document.getElementById("roleFilter").style.display = "none";
+        document.getElementById("staffScanBar").style.display = "block";
+      }
+    }
+
+    // ---- Scan Notes ----
+    let scannedLeads = [];
+
+    function openScanModal() {
+      document.getElementById("scanModal").style.display = "block";
+      document.getElementById("scanResults").style.display = "none";
+      document.getElementById("scanLoading").style.display = "none";
+      document.getElementById("scanError").style.display = "none";
+      document.getElementById("scanUploadArea").style.display = "block";
+      document.getElementById("scanPhotoInput").value = "";
+    }
+
+    function closeScanModal() {
+      document.getElementById("scanModal").style.display = "none";
+    }
+
+    async function handleScanPhoto(input) {
+      const file = input.files[0];
+      if (!file) return;
+
+      document.getElementById("scanUploadArea").style.display = "none";
+      document.getElementById("scanLoading").style.display = "block";
+      document.getElementById("scanError").style.display = "none";
+
+      try {
+        const base64 = await fileToBase64(file);
+        const res = await fetch("/api/scan-photo", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ imageBase64: base64, mimeType: file.type })
+        });
+        const data = await res.json();
+        if (!res.ok || data.error) throw new Error(data.error || "Scan failed");
+
+        scannedLeads = data.leads.map((l, i) => ({ ...l, _id: i, _keep: true }));
+        document.getElementById("scanLoading").style.display = "none";
+        renderScanResults();
+      } catch (err) {
+        document.getElementById("scanLoading").style.display = "none";
+        document.getElementById("scanError").style.display = "block";
+        document.getElementById("scanError").textContent = "❌ Error: " + err.message;
+        document.getElementById("scanUploadArea").style.display = "block";
+      }
+    }
+
+    function fileToBase64(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result.split(",")[1]);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+
+    const categoryColors = {
+      "Interested": "#067647",
+      "Not Interested": "#667085",
+      "Engineering": "#175cd3",
+      "Medical": "#b42318",
+      "Arts": "#7c3aed",
+      "Counselling": "#946200",
+      "Joined": "#0e9f6e"
+    };
+
+    function renderScanResults() {
+      const list = document.getElementById("scanLeadsList");
+      list.innerHTML = scannedLeads.map((lead) => `
+        <div style="background:#fff;border-radius:10px;padding:14px;margin-bottom:10px;border-left:5px solid ${categoryColors[lead.category] || "#98a2b3"}">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <strong style="font-size:16px">${escapeHtml(lead.name || "Unknown")}</strong>
+            <span style="background:${categoryColors[lead.category] || "#eef1f5"};color:#fff;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:700">${lead.category || "?"}</span>
+          </div>
+          <div style="font-size:13px;color:#667085;margin-bottom:8px">
+            📞 ${lead.phone || "-"} &nbsp;|&nbsp; 📍 ${lead.area || "-"} &nbsp;|&nbsp; ${lead.group || "-"}
+          </div>
+          <div style="font-size:13px;color:#344054;margin-bottom:8px">${escapeHtml(lead.notes || "")}</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+            <div style="font-size:12px;color:#667085"><b>Course:</b> ${lead.course || "-"}</div>
+            <div style="font-size:12px;color:#667085"><b>Community:</b> ${lead.community || "-"}</div>
+          </div>
+          <div style="margin-top:10px;display:flex;gap:8px">
+            <button class="btn secondary" style="flex:1;font-size:13px;min-height:36px" onclick="removeScanLead(${lead._id})">❌ Remove</button>
+          </div>
+        </div>
+      `).join("");
+      document.getElementById("scanResults").style.display = "block";
+    }
+
+    function removeScanLead(id) {
+      scannedLeads = scannedLeads.filter((l) => l._id !== id);
+      if (scannedLeads.length === 0) {
+        document.getElementById("scanResults").style.display = "none";
+        document.getElementById("scanUploadArea").style.display = "block";
+      } else {
+        renderScanResults();
+      }
+    }
+
+    async function saveScannedLeads() {
+      const btn = document.getElementById("scanSaveBtn");
+      btn.textContent = "Saving...";
+      btn.disabled = true;
+
+      for (const lead of scannedLeads) {
+        const newLead = {
+          student: lead.name || "",
+          phone: normalizePhone(lead.phone || ""),
+          area: lead.area || "",
+          group: lead.group || "Computer Science",
+          community: lead.community || "BC",
+          firstGraduate: lead.firstGraduate || "Not Sure",
+          course: lead.course || "",
+          college: lead.college || "",
+          staff: loggedInStaff || "",
+          callResult: lead.callResult || "New Lead",
+          interestLevel: lead.category === "Interested" ? "Hot" : lead.category === "Not Interested" ? "Low" : "Warm",
+          notes: `[${lead.category}] ${lead.notes || ""}`.trim(),
+          lastCall: isoToday,
+          nextDate: isoToday,
+          nextTime: "10:00",
+          visitDate: "",
+          admissionDoneDate: lead.category === "Joined" ? isoToday : "",
+          callsDone: 1
+        };
+        await createLead(newLead);
+      }
+
+      await loadLeads();
+      render();
+      closeScanModal();
+      btn.textContent = "✅ எல்லாம் Save பண்ணு";
+      btn.disabled = false;
+      alert(`✅ ${scannedLeads.length} leads saved!`);
+      scannedLeads = [];
+    }
+
+    function clearAppCache() {
+      localStorage.clear();
+      sessionStorage.clear();
+      const box = document.getElementById("cacheStatusBox");
+      box.style.display = "block";
+      setTimeout(() => {
+        box.style.display = "none";
+        location.href = location.href.split("?")[0] + "?v=" + Date.now();
+      }, 1500);
+    }
+
+    function doStaffPinLogin() {
+      const name = document.getElementById("staffLoginName").value;
+      const pin = document.getElementById("staffLoginPin").value;
+      const errEl = document.getElementById("staffLoginErr");
+      errEl.style.display = "none";
+
+      if (!cachedConfig) {
+        errEl.textContent = "❌ Server connect ஆகலை. Refresh பண்ணுங்க.";
+        errEl.style.display = "block";
+        return;
+      }
+
+      const staffEntry = cachedConfig.staffList.find((s) => s.name === name);
+      if (staffEntry && staffEntry.pin === pin) {
+        loggedInStaff = name;
+        roleFilter.value = "Staff";
+        sessionStorage.setItem("staffAuth", JSON.stringify({ name, role: "staff" }));
+        showMainApp();
+        render();
+        setupReminders();
+      } else {
+        errEl.textContent = "❌ Wrong PIN. Try again.";
+        errEl.style.display = "block";
+        document.getElementById("staffLoginPin").value = "";
+        document.getElementById("staffLoginPin").focus();
+      }
+    }
+
     // ---- Init ----
     async function init() {
       await loadConfig();
-      await loadLeads();
-      await loadConnectInfo();
-      render();
+
+      if (isOnLaptop()) {
+        // Manager — direct access
+        roleFilter.value = "Manager";
+        showMainApp();
+        await loadLeads();
+        await loadConnectInfo();
+        render();
+        setupReminders();
+      } else {
+        // Staff mobile — check saved session
+        const saved = (() => { try { return JSON.parse(sessionStorage.getItem("staffAuth")); } catch { return null; } })();
+        if (saved && saved.name) {
+          loggedInStaff = saved.name;
+          roleFilter.value = "Staff";
+          showMainApp();
+          await loadLeads();
+          render();
+          setupReminders();
+        } else {
+          // Show login page with staff names
+          const sel = document.getElementById("staffLoginName");
+          const names = cachedConfig ? cachedConfig.staffList.map((s) => s.name) : [];
+          sel.innerHTML = names.map((n) => `<option>${n}</option>`).join("");
+          document.getElementById("staffLoginPin").focus();
+          document.getElementById("staffLoginPin").onkeydown = (e) => { if (e.key === "Enter") doStaffPinLogin(); };
+          document.getElementById("staffLoginBtn").onclick = doStaffPinLogin;
+          await loadLeads();
+        }
+      }
     }
 
     init();

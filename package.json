@@ -2,7 +2,40 @@
   "name": "admission-followup-crm",
   "version": "1.0.0",
   "private": true,
+  "main": "main.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "electron": "electron .",
+    "build": "electron-builder --win --x64"
+  },
+  "build": {
+    "appId": "com.admissioncrm.app",
+    "productName": "Admission CRM",
+    "directories": {
+      "output": "C:\\CRM-Build"
+    },
+    "files": [
+      "main.js",
+      "server.js",
+      "index.html",
+      "package.json"
+    ],
+    "extraResources": [],
+    "win": {
+      "target": "nsis",
+      "icon": "icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "include": "installer.nsh"
+    }
+  },
+  "devDependencies": {
+    "electron": "^42.4.1",
+    "electron-builder": "^26.15.3"
   }
 }
