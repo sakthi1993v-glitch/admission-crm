@@ -11,3 +11,6 @@ electron-dist/
 *.html
 *.json
 *.css
+CRM-Build/
+CRM-Build2/
+Release-v2/
