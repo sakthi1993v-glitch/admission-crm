@@ -3461,7 +3461,8 @@ ${buildSystemPrompt(ctx)}`;
     }
 
     async function renderStaffTable() {
-      const res = await fetch("/api/config");
+      const branch = sessionStorage.getItem("crmBranch") || "mannargudi";
+      const res = await fetch("/api/config?branch=" + branch);
       const config = await res.json();
       const tbody = document.getElementById("staffTableBody");
       tbody.innerHTML = config.staffList.map((s, i) => {
