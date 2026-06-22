@@ -3802,23 +3802,34 @@ ${buildSystemPrompt(ctx)}`;
     function fileToBase64(file) {
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
-        reader.onerror = reject;
+        reader.onerror = (e) => reject(new Error("File read failed"));
         reader.onload = (e) => {
-          const img = new Image();
-          img.onerror = reject;
-          img.onload = () => {
-            const maxSize = 1600;
-            let w = img.width, h = img.height;
-            if (w > maxSize || h > maxSize) {
-              if (w > h) { h = Math.round(h * maxSize / w); w = maxSize; }
-              else { w = Math.round(w * maxSize / h); h = maxSize; }
-            }
-            const canvas = document.createElement("canvas");
-            canvas.width = w; canvas.height = h;
-            canvas.getContext("2d").drawImage(img, 0, 0, w, h);
-            resolve(canvas.toDataURL("image/jpeg", 0.85).split(",")[1]);
-          };
-          img.src = e.target.result;
+          try {
+            const img = new Image();
+            img.onerror = () => reject(new Error("Image load failed"));
+            img.onload = () => {
+              try {
+                const maxSize = 1200;
+                let w = img.width, h = img.height;
+                if (w > maxSize || h > maxSize) {
+                  if (w > h) { h = Math.round(h * maxSize / w); w = maxSize; }
+                  else { w = Math.round(w * maxSize / h); h = maxSize; }
+                }
+                const canvas = document.createElement("canvas");
+                canvas.width = w; canvas.height = h;
+                const ctx = canvas.getContext("2d");
+                if (!ctx) { reject(new Error("Canvas not supported")); return; }
+                ctx.drawImage(img, 0, 0, w, h);
+                const dataUrl = canvas.toDataURL("image/jpeg", 0.80);
+                resolve(dataUrl.split(",")[1]);
+              } catch (err) {
+                reject(new Error("Image resize failed: " + err.message));
+              }
+            };
+            img.src = e.target.result;
+          } catch (err) {
+            reject(new Error("Image process failed: " + err.message));
+          }
         };
         reader.readAsDataURL(file);
       });
