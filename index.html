@@ -3592,7 +3592,7 @@ ${buildSystemPrompt(ctx)}`;
       if (!name) return;
       const config = window._staffConfig;
       config.staffList.push({ name, pin });
-      await fetch("/api/config", {
+      await fetch("/api/config?branch=" + (sessionStorage.getItem("crmBranch") || "mannargudi"), {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(config)
@@ -3607,7 +3607,7 @@ ${buildSystemPrompt(ctx)}`;
       if (!pwd) return;
       const config = window._staffConfig;
       config.managerPassword = pwd;
-      await fetch("/api/config", {
+      await fetch("/api/config?branch=" + (sessionStorage.getItem("crmBranch") || "mannargudi"), {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(config)
@@ -4370,7 +4370,8 @@ ${buildSystemPrompt(ctx)}`;
     }
 
     async function renderCategoryList() {
-      const res = await fetch("/api/config");
+      const branch = sessionStorage.getItem("crmBranch") || "mannargudi";
+      const res = await fetch("/api/config?branch=" + branch);
       const config = await res.json();
       window._catConfig = config;
       const opts = config.callResultOptions || [];
