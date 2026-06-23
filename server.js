@@ -184,11 +184,31 @@ const server = http.createServer(async (req, res) => {
       const branchId = url.searchParams.get("branch") || "mannargudi";
       const db = readDb();
       if (!db.config) db.config = defaultConfig();
+
+      // --- Branch isolation guards (prevent one branch overwriting another's config) ---
+      // 1. If body carries a branchId for a different branch, reject.
+      if (body.branchId && body.branchId !== branchId) {
+        return sendJson(res, { error: `branch mismatch: body branchId "${body.branchId}" != "${branchId}"` }, 400);
+      }
+      // 2. If body's branchName clearly belongs to the OTHER branch, reject.
+      const otherName = branchId === "trichy" ? "Mannargudi Branch" : "Trichy Branch";
+      if (body.branchName && body.branchName.trim() === otherName) {
+        return sendJson(res, { error: `branch mismatch: refusing to write "${otherName}" config into "${branchId}"` }, 400);
+      }
+      // 3. Empty/missing staffList must NOT wipe an existing non-empty staffList.
+      const existing = branchId === "trichy" ? (db.config.branch2 || {}) : db.config;
+      const safeBody = { ...body };
+      if ((!Array.isArray(safeBody.staffList) || safeBody.staffList.length === 0)
+          && Array.isArray(existing.staffList) && existing.staffList.length > 0) {
+        delete safeBody.staffList; // keep existing staff
+      }
+
+      // --- Merge (never wholesale-replace) so unspecified keys survive ---
       if (branchId === "trichy") {
-        db.config.branch2 = { ...db.config.branch2, ...body };
+        db.config.branch2 = { ...db.config.branch2, ...safeBody };
       } else {
         const branch2 = db.config.branch2;
-        db.config = { ...body, branch2 };
+        db.config = { ...db.config, ...safeBody, branch2 };
       }
       writeDb(db);
       return sendJson(res, getBranchConfig(db.config, branchId));
