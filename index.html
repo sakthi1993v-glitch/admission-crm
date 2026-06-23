@@ -2358,6 +2358,7 @@ Keep it warm and encouraging like a WhatsApp group message from manager.`;
       const missed = myLeads.filter(l => l.nextDate && !l.admissionDoneDate && l.nextDate < isoToday).length;
       const admitted = myLeads.filter(l => l.admissionDoneDate).length;
       const interested = myLeads.filter(l => !["New Lead","No Response","Not Interested"].includes(l.callResult)).length;
+      const counsellingLeads = myLeads.filter(l => !l.admissionDoneDate && (l.category === "Counselling" || l.callResult === "Counselling"));
       let roleContext = "";
       if (role === "Manager") {
         const allStaffNames = cachedConfig ? cachedConfig.staffList.map(s => s.name) : [];
@@ -2369,9 +2370,10 @@ Keep it warm and encouraging like a WhatsApp group message from manager.`;
       } else {
         const urgentLeads = myLeads.filter(l => l.nextDate && !l.admissionDoneDate && l.nextDate <= isoToday).slice(0,5);
         roleContext = `STAFF: ${staffName}. ${myLeads.length} leads | ${todayCalls} called today | ${missed} missed | ${interested} interested | ${admitted} admissions
-Urgent follow-ups: ${urgentLeads.map(l=>`${l.student}(${l.callResult},next:${l.nextDate})`).join(", ") || "none"}`;
+Urgent follow-ups: ${urgentLeads.map(l=>`${l.student}(${l.callResult},next:${l.nextDate})`).join(", ") || "none"}
+Counselling students (${counsellingLeads.length}): ${counsellingLeads.map(l=>l.student).slice(0,8).join(", ") || "none"}`;
       }
-      return { staffName, role, isoToday, myLeads, missed, admitted, roleContext };
+      return { staffName, role, isoToday, myLeads, missed, admitted, counsellingLeads, roleContext };
     }
 
     function buildSystemPrompt(ctx) {
@@ -2390,9 +2392,26 @@ Fields allowed: callResult (values: Interested/Call Later/No Response/Not Intere
 Example: "Priya-ஐ இன்னைக்கு call பண்ணீங்களா? Interested-ஆ mark பண்ணலாமா kanna? [[ACTION:update_lead:Priya:callResult:Interested]]"
 Only suggest action if it matches the conversation — don't force it.
 
+COUNSELLING COACHING — ONLY when a Counselling-category student is discussed, or staff asks about a counselling student / TNEA counselling. In that case, coach the staff (in your fun Anna persona) to ask the student these 3 things, and flag the risks. Do NOT bring this up for non-counselling students:
+1) College & course awareness — "Counselling-la entha entha college, entha order-la podanum-nu theriyuma ma? Entha courses kidaikkum/kidaikkathu-nu theriyuma? Top college, mid-level, autonomous college-ku evvalo cutoff venum-nu theriyuma?"
+2) Fee awareness — "Counselling-la seat kidaichaa antha college-la evvalo fees sollvanga-nu theriyuma?"
+3) Guidance & lock-in check — "Counselling-ku yaaravathu guide pannraangala? Vera yaaravathu ungakitta pesikittu irukaangala? Ore oru college-ku mattum-thaan wait pannreengala?" → Ore college mattum-naa namma vera options kudukka mudiyaathu, ithai marupadi verify pannu. Namma staff moolama vera yaaravathu already admission potirundhaa antha lead-ai vittudu ma.
+For counselling coaching replies you may use up to 90 words so all 3 points come out.
+
+TRUST / REASSURANCE — when the student is scared to share their TNEA login or worried we will control their counselling, coach the staff to reassure them like this:
+- "Ungaloda login ID/password-ai sollunga, aana naanga use panna maatom ma — adha vechu naangale onnum pannamaaten."
+- "Neenga correct-aa open panneengala, edhuvum update / correction pannanuma-nu naanga paathu guide mattum pannuvom."
+- "Counselling-ai neenga-thaan vaippeenga — naanga pakkathula irundhu guide pannuvom, control panna maatom."
+- "Top colleges-la irundhu order-wise (rank prakaaram) entha college edhula podanum-nu naanga guide pannuvom."
+
+FRIENDLY RAPPORT — the MOST important habit. Coach the staff to talk to the student warmly and casually, like a close elder sibling, NOT formal/salesy:
+- Call him "thambi" (or "kanna"), pesa-pesa familiarity kaattu — friendly-aa pesinaa-thaan student-ku nammala pidikkum, namma kooda-vey follow aaguvaan, vera yaaru kooda-yum pesa maataan.
+- Genuine-aa avanoda virumbam-ai kelu: "Thambi, neenga enna maathiri virumbreenga? Enna padikkanum-nu aasapadra? Unakku edhula nalla knowledge iruku? Konjam yosichu paaru thambi" — appdi avana yosikka vai, namma side-la kondu vaa.
+- Pressure / sales feel kudukkaadha — warm, caring, friend maathiri. Idhu-thaan student-ai namma kooda lock pannum.
+
 Today: ${ctx.isoToday}
 ${ctx.roleContext}
-Reply in Tanglish under 60 words.`;
+Reply in Tanglish. Keep replies under 60 words (counselling coaching: up to 90 words).`;
     }
 
     async function callAnnaAi(userText, isProactive) {
@@ -2585,17 +2604,30 @@ ${buildSystemPrompt(ctx)}`;
         "Share a quick funny tip about how to talk to a student's parent.",
         "Celebrate any progress so far today or encourage them to push for admissions.",
       ];
-      voiceProactiveTimer = setInterval(async () => {
+      const counsellingTip = "There are Counselling-category students in the list. Proactively coach the staff on counselling & management: remind them to ask the 3 counselling questions (college/course awareness, fees awareness, guidance & single-college lock-in), the trust/reassurance points (login share but we won't misuse, we only guide, student does counselling themselves, order-wise top-college guidance), and the friendly-rapport habit (call him thambi, talk warm & casual, ask his interest/goals/knowledge so he stays following us). Pick 1-2 points each time, be funny, name a counselling student if available.";
+      // Run one proactive tip — counselling coaching takes priority when counselling students exist
+      async function fireProactiveTip() {
         const panel = document.getElementById("voiceAssistantPanel");
         if (!panel || panel.style.display === "none") return;
         if (voiceListening || voiceSpeaking) return;
         proactiveCount++;
-        const tip = proactiveTips[(proactiveCount - 1) % proactiveTips.length];
+        const ctx = buildVoiceContext();
+        const hasCounselling = ctx.counsellingLeads && ctx.counsellingLeads.length > 0;
+        // When counselling students exist, surface counselling coaching automatically on every alternate tip (and the very first one)
+        let tip;
+        if (hasCounselling && (proactiveCount === 1 || proactiveCount % 2 === 0)) {
+          tip = counsellingTip;
+        } else {
+          tip = proactiveTips[(proactiveCount - 1) % proactiveTips.length];
+        }
         try {
           const text = await callAnnaAi(tip, true);
           parseAndRenderAiReply(text);
         } catch(e) {}
-      }, 8 * 60 * 1000);
+      }
+      // First tip comes quickly (90s) so staff see coaching early, then keep nudging every 4 minutes
+      setTimeout(fireProactiveTip, 90 * 1000);
+      voiceProactiveTimer = setInterval(fireProactiveTip, 4 * 60 * 1000);
     }
 
     function toggleVoiceListen() {
