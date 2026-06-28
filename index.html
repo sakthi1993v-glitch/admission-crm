@@ -696,19 +696,20 @@
       <h2 style="margin:0 0 4px">APSConnect</h2>
       <p class="login-subtitle" style="margin-bottom:20px">Login to continue</p>
 
-      <!-- Branch Picker -->
-      <div id="loginBranchPick">
+      <!-- Branch Picker (hidden — Trichy-only PC) -->
+      <div id="loginBranchPick" hidden>
         <p style="color:#667085;font-size:14px;margin-bottom:12px">Branch தேர்வு செய்யுங்கள்</p>
         <button class="btn update" style="width:100%;min-height:52px;font-size:16px;margin-bottom:10px" onclick="selectBranch('mannargudi','Mannargudi Branch')">🏫 Mannargudi Branch</button>
         <button class="btn secondary" style="width:100%;min-height:52px;font-size:16px" onclick="selectBranch('trichy','Trichy Branch')">🏫 Trichy Branch</button>
       </div>
 
       <!-- Role Picker -->
-      <div id="loginRolePick" hidden>
+      <div id="loginRolePick">
         <p id="loginBranchLabel" style="color:#175cd3;font-size:13px;font-weight:600;margin-bottom:12px"></p>
         <button class="btn update" style="width:100%;min-height:52px;font-size:16px;margin-bottom:10px" onclick="selectLoginRole('manager')">🔑 Manager Login</button>
         <button class="btn secondary" style="width:100%;min-height:52px;font-size:16px" onclick="selectLoginRole('staff')">👤 Staff Login</button>
-        <button class="btn secondary" style="width:100%;min-height:40px;font-size:13px;margin-top:8px" onclick="backToBranchPick()">← Branch மாற்று</button>
+        <!-- Branch மாற்று hidden — Trichy-only PC -->
+        <button class="btn secondary" style="width:100%;min-height:40px;font-size:13px;margin-top:8px;display:none" onclick="backToBranchPick()">← Branch மாற்று</button>
       </div>
 
       <!-- Manager Form -->
@@ -3339,8 +3340,8 @@ ${buildSystemPrompt(ctx)}`;
       }
     }
 
-    let selectedBranch = "mannargudi";
-    let selectedBranchName = "Mannargudi Branch";
+    let selectedBranch = "trichy";
+    let selectedBranchName = "Trichy Branch";
 
     function selectBranch(branchId, branchName) {
       selectedBranch = branchId;
@@ -4531,6 +4532,9 @@ ${buildSystemPrompt(ctx)}`;
 
     // Keepalive ping — prevents Glitch/free-tier servers from sleeping
     setInterval(() => fetch('/api/info').catch(() => {}), 4 * 60 * 1000);
+
+    // This PC is Trichy-only — auto-set branch label on load
+    document.getElementById("loginBranchLabel").textContent = "📍 Trichy Branch";
 
     init();
   </script>
