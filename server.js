@@ -14,6 +14,7 @@ if (fs.existsSync(envPath)) {
 }
 
 const GROQ_API_KEY = process.env.GROQ_API_KEY || "";
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
 
 const port = Number(process.env.PORT || 3000);
 const root = process.env.CRM_DATA_DIR || (process.pkg ? path.dirname(process.execPath) : __dirname);
@@ -367,7 +368,7 @@ const server = http.createServer(async (req, res) => {
       const body = await readJsonBody(req);
       const { prompt } = body;
       if (!prompt) return sendJson(res, { error: "No prompt" }, 400);
-      if (!GROQ_API_KEY) return sendJson(res, { error: "AI not configured" }, 503);
+      if (!GEMINI_API_KEY && !GROQ_API_KEY) return sendJson(res, { error: "AI not configured" }, 503);
       try {
         const text = await callGroqText(prompt);
         return sendJson(res, { text });
@@ -590,80 +591,136 @@ function todayIso() {
   return new Date().toISOString().slice(0, 10);
 }
 
-function callGroqText(prompt) {
+function callGeminiText(prompt) {
   return new Promise((resolve, reject) => {
-    const body = JSON.stringify({
-      model: "llama-3.3-70b-versatile",
-      messages: [{ role: "user", content: prompt }],
-      max_tokens: 1024
-    });
-    const options = {
-      hostname: "api.groq.com",
-      path: "/openai/v1/chat/completions",
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${GROQ_API_KEY}`,
-        "Content-Length": Buffer.byteLength(body)
-      }
-    };
-    const req = https.request(options, (r) => {
-      let data = "";
-      r.on("data", (chunk) => { data += chunk; });
-      r.on("end", () => {
-        try {
-          const parsed = JSON.parse(data);
-          if (parsed.error) { reject(new Error(parsed.error.message)); return; }
-          resolve(parsed.choices?.[0]?.message?.content || "");
-        } catch (e) { reject(new Error("Parse error")); }
+    const key = GEMINI_API_KEY || GROQ_API_KEY;
+    if (!key) { reject(new Error("AI not configured")); return; }
+    // Use Gemini if GEMINI_API_KEY set, else fallback to Groq
+    if (GEMINI_API_KEY) {
+      const body = JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { maxOutputTokens: 1024 }
       });
-    });
-    req.on("error", reject);
-    req.write(body);
-    req.end();
+      const path = `/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
+      const options = {
+        hostname: "generativelanguage.googleapis.com",
+        path,
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(body) }
+      };
+      const req = https.request(options, (r) => {
+        let data = "";
+        r.on("data", (chunk) => { data += chunk; });
+        r.on("end", () => {
+          try {
+            const parsed = JSON.parse(data);
+            if (parsed.error) { reject(new Error(parsed.error.message)); return; }
+            resolve(parsed.candidates?.[0]?.content?.parts?.[0]?.text || "");
+          } catch (e) { reject(new Error("Gemini parse error")); }
+        });
+      });
+      req.on("error", reject);
+      req.write(body);
+      req.end();
+    } else {
+      // Groq fallback
+      const body = JSON.stringify({
+        model: "llama-3.3-70b-versatile",
+        messages: [{ role: "user", content: prompt }],
+        max_tokens: 1024
+      });
+      const options = {
+        hostname: "api.groq.com",
+        path: "/openai/v1/chat/completions",
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${GROQ_API_KEY}`, "Content-Length": Buffer.byteLength(body) }
+      };
+      const req = https.request(options, (r) => {
+        let data = "";
+        r.on("data", (chunk) => { data += chunk; });
+        r.on("end", () => {
+          try {
+            const parsed = JSON.parse(data);
+            if (parsed.error) { reject(new Error(parsed.error.message)); return; }
+            resolve(parsed.choices?.[0]?.message?.content || "");
+          } catch (e) { reject(new Error("Parse error")); }
+        });
+      });
+      req.on("error", reject);
+      req.write(body);
+      req.end();
+    }
   });
 }
 
+// Keep old name for compatibility
+const callGroqText = callGeminiText;
+
 function callGemini(imageBase64, mimeType, prompt) {
   return new Promise((resolve, reject) => {
-    const body = JSON.stringify({
-      model: "meta-llama/llama-4-scout-17b-16e-instruct",
-      messages: [{
-        role: "user",
-        content: [
+    if (GEMINI_API_KEY) {
+      // Real Gemini Vision API
+      const body = JSON.stringify({
+        contents: [{
+          parts: [
+            { text: prompt },
+            { inline_data: { mime_type: mimeType, data: imageBase64 } }
+          ]
+        }],
+        generationConfig: { maxOutputTokens: 4096 }
+      });
+      const path = `/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
+      const options = {
+        hostname: "generativelanguage.googleapis.com",
+        path,
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(body) }
+      };
+      const req = https.request(options, (r) => {
+        let data = "";
+        r.on("data", (chunk) => { data += chunk; });
+        r.on("end", () => {
+          try {
+            const parsed = JSON.parse(data);
+            if (parsed.error) { reject(new Error(parsed.error.message)); return; }
+            resolve(parsed.candidates?.[0]?.content?.parts?.[0]?.text || "");
+          } catch (e) { reject(new Error("Gemini vision parse error: " + data.slice(0,200))); }
+        });
+      });
+      req.on("error", reject);
+      req.write(body);
+      req.end();
+    } else {
+      // Groq vision fallback
+      const body = JSON.stringify({
+        model: "meta-llama/llama-4-scout-17b-16e-instruct",
+        messages: [{ role: "user", content: [
           { type: "text", text: prompt },
           { type: "image_url", image_url: { url: `data:${mimeType};base64,${imageBase64}` } }
-        ]
-      }],
-      max_tokens: 4096
-    });
-
-    const options = {
-      hostname: "api.groq.com",
-      path: "/openai/v1/chat/completions",
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${GROQ_API_KEY}`,
-        "Content-Length": Buffer.byteLength(body)
-      }
-    };
-
-    const req = https.request(options, (r) => {
-      let data = "";
-      r.on("data", (chunk) => { data += chunk; });
-      r.on("end", () => {
-        try {
-          const parsed = JSON.parse(data);
-          if (parsed.error) { reject(new Error(parsed.error.message)); return; }
-          const text = parsed.choices?.[0]?.message?.content || "";
-          resolve(text);
-        } catch (e) { reject(new Error("Groq parse error: " + data)); }
+        ]}],
+        max_tokens: 4096
       });
-    });
-    req.on("error", reject);
-    req.write(body);
-    req.end();
+      const options = {
+        hostname: "api.groq.com",
+        path: "/openai/v1/chat/completions",
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${GROQ_API_KEY}`, "Content-Length": Buffer.byteLength(body) }
+      };
+      const req = https.request(options, (r) => {
+        let data = "";
+        r.on("data", (chunk) => { data += chunk; });
+        r.on("end", () => {
+          try {
+            const parsed = JSON.parse(data);
+            if (parsed.error) { reject(new Error(parsed.error.message)); return; }
+            resolve(parsed.choices?.[0]?.message?.content || "");
+          } catch (e) { reject(new Error("Groq parse error: " + data)); }
+        });
+      });
+      req.on("error", reject);
+      req.write(body);
+      req.end();
+    }
   });
 }
 
