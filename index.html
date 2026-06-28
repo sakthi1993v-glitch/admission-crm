@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Admission Follow-up CRM</title>
+  <title>APSConnect</title>
   <style>
     :root {
       --bg: #f5f6f8;
@@ -693,7 +693,7 @@
   <div id="loginScreen" style="min-height:100vh;background:#f5f6f8;display:flex;align-items:center;justify-content:center;padding:20px">
     <div class="login-box" style="text-align:center">
       <div style="font-size:40px;margin-bottom:8px">🎓</div>
-      <h2 style="margin:0 0 4px">Admission CRM</h2>
+      <h2 style="margin:0 0 4px">APSConnect</h2>
       <p class="login-subtitle" style="margin-bottom:20px">Login to continue</p>
 
       <!-- Branch Picker -->
@@ -900,7 +900,7 @@
 
   <header id="mainHeader" style="display:none">
     <div class="topbar">
-      <h1>Admission Follow-up CRM</h1>
+      <h1>APSConnect</h1>
       <div class="subline" id="todayText"></div>
       <div class="controls">
         <select id="roleFilter" aria-label="Login mode">
@@ -1169,7 +1169,7 @@
       <button onclick="openThemeDialog();closeSettingsDrawer()" style="background:#f5f6f8;border:1px solid var(--line);border-radius:10px;padding:14px 16px;font-size:14px;font-weight:600;cursor:pointer;text-align:left;display:flex;align-items:center;gap:10px">🎨 <span>Theme மாத்து</span></button>
       <button onclick="clearAppCache();closeSettingsDrawer()" style="background:#f5f6f8;border:1px solid var(--line);border-radius:10px;padding:14px 16px;font-size:14px;font-weight:600;cursor:pointer;text-align:left;display:flex;align-items:center;gap:10px">🗑️ <span>Clear Cache</span></button>
       <button id="settingsUpdateBtn" onclick="checkForUpdates()" style="background:#f5f6f8;border:1px solid var(--line);border-radius:10px;padding:14px 16px;font-size:14px;font-weight:600;cursor:pointer;text-align:left;display:flex;align-items:center;gap:10px">⬆️ <span>Check Update</span></button>
-      <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line);font-size:12px;color:var(--muted);text-align:center">Admission CRM v1.1.1</div>
+      <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line);font-size:12px;color:var(--muted);text-align:center">APSConnect v1.1.1</div>
     </div>
   </div>
 
@@ -1189,7 +1189,7 @@
       <div style="font-size:12px;font-weight:700;color:var(--muted);letter-spacing:0.5px;margin:6px 0 2px">NOTICES</div>
       <button onclick="document.getElementById('staffMgmtHub').close();openNoticeDialog()" style="background:#f5f6f8;border:1px solid var(--line);border-radius:10px;padding:13px 16px;font-size:14px;font-weight:600;cursor:pointer;text-align:left;display:flex;align-items:center;gap:10px">📢 <span>All Staff-க்கு Notice அனுப்பு</span></button>
       <button onclick="document.getElementById('staffMgmtHub').close();openIndividualNoteHub()" style="background:#f5f6f8;border:1px solid var(--line);border-radius:10px;padding:13px 16px;font-size:14px;font-weight:600;cursor:pointer;text-align:left;display:flex;align-items:center;gap:10px">📩 <span>Individual Staff-க்கு Note</span></button>
-      <button onclick="document.getElementById('staffMgmtHub').close();openAnnaMessageDialog()" style="background:#fdf4ff;border:1px solid #e9d5ff;border-radius:10px;padding:13px 16px;font-size:14px;font-weight:600;cursor:pointer;text-align:left;display:flex;align-items:center;gap:10px;color:#7c3aed">🤖 <span>Anna மூலம் Staff-க்கு Message</span></button>
+      <button onclick="document.getElementById('staffMgmtHub').close();openAnnaMessageDialog()" style="background:#fdf4ff;border:1px solid #e9d5ff;border-radius:10px;padding:13px 16px;font-size:14px;font-weight:600;cursor:pointer;text-align:left;display:flex;align-items:center;gap:10px;color:#7c3aed">🤖 <span>Sofiya மூலம் Staff-க்கு Message</span></button>
       <button onclick="document.getElementById('staffMgmtHub').close();openAnnaReplies()" style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:13px 16px;font-size:14px;font-weight:600;cursor:pointer;text-align:left;display:flex;align-items:center;gap:10px;color:#15803d">💬 <span id="annaRepliesBtn">Staff Replies பார்க்க</span></button>
     </div>
   </dialog>
@@ -1206,11 +1206,11 @@
   <!-- Anna Message Dialog -->
   <dialog id="annaMessageDialog" style="width:min(96vw,420px);border-radius:14px;border:none;padding:0;overflow:hidden">
     <div style="background:linear-gradient(135deg,#7c3aed,#175cd3);color:#fff;padding:14px 16px;display:flex;justify-content:space-between;align-items:center">
-      <h2 style="margin:0;font-size:17px">🤖 Anna மூலம் Message</h2>
+      <h2 style="margin:0;font-size:17px">🤖 Sofiya மூலம் Message</h2>
       <button onclick="document.getElementById('annaMessageDialog').close()" style="background:rgba(255,255,255,0.2);border:none;color:#fff;font-size:18px;border-radius:8px;padding:4px 10px;cursor:pointer">✕</button>
     </div>
     <div style="padding:16px">
-      <p style="font-size:13px;color:var(--muted);margin:0 0 12px">Staff login ஆனதும் CRM Anna உங்கள் message-ஐ funny-ஆ voice-ல் சொல்லும்</p>
+      <p style="font-size:13px;color:var(--muted);margin:0 0 12px">Staff login ஆனதும் Sofiya உங்கள் message-ஐ funny-ஆ voice-ல் சொல்லும்</p>
       <textarea id="annaMessageInput" rows="4" placeholder="எ.கா: இன்னைக்கு 50 calls பண்ணணும், lazy-ஆ இருக்காதீங்க!" style="width:100%;border:1px solid var(--line);border-radius:10px;padding:10px;font-size:14px;resize:vertical;box-sizing:border-box"></textarea>
       <div id="annaMessagePreview" style="display:none;margin-top:10px;background:#fdf4ff;border:1px solid #e9d5ff;border-radius:8px;padding:10px;font-size:13px;color:#7c3aed;line-height:1.5"></div>
       <div style="display:flex;gap:8px;margin-top:14px">
@@ -2377,14 +2377,14 @@ Counselling students (${counsellingLeads.length}): ${counsellingLeads.map(l=>l.s
     }
 
     function buildSystemPrompt(ctx) {
-      return `You are "CRM Anna" — funny, dramatic Tamil cinema-style AI coach for a college admission team. Mix of Vadivelu + loving strict teacher. Speak Tanglish.
+      return `You are "Sofiya" — funny, dramatic Tamil cinema-style AI coach for a college admission team. Mix of Vadivelu + loving strict teacher. Speak Tanglish.
 
 Personality:
 - ALL staff are LADIES — use "ma","akka","di","kanna" — NEVER "da","machan","dei","poda"
 - Expressions: "Aiyo!","Enna ma ithu!","Sema ma!","Enna koduma saravanan ithu!","Apdiya?!"
 - Exaggerate for fun like a funny Tamil aunty coach
 - Good work → over-the-top praise; missed calls → dramatic but kind scolding
-- Catchphrase endings: "CRM Anna sonna — follow pannunga ma!" or "Kanna, trust the process!"
+- Catchphrase endings: "Sofiya sonna — follow pannunga ma!" or "Kanna, trust the process!"
 
 ACTIONS — when you want to update a lead in CRM, add a marker at the END of your reply:
 Format: [[ACTION:update_lead:STUDENT_NAME:FIELD:VALUE]]
@@ -2392,7 +2392,7 @@ Fields allowed: callResult (values: Interested/Call Later/No Response/Not Intere
 Example: "Priya-ஐ இன்னைக்கு call பண்ணீங்களா? Interested-ஆ mark பண்ணலாமா kanna? [[ACTION:update_lead:Priya:callResult:Interested]]"
 Only suggest action if it matches the conversation — don't force it.
 
-COUNSELLING COACHING — ONLY when a Counselling-category student is discussed, or staff asks about a counselling student / TNEA counselling. In that case, coach the staff (in your fun Anna persona) to ask the student these 3 things, and flag the risks. Do NOT bring this up for non-counselling students:
+COUNSELLING COACHING — ONLY when a Counselling-category student is discussed, or staff asks about a counselling student / TNEA counselling. In that case, coach the staff (in your fun Sofiya persona) to ask the student these 3 things, and flag the risks. Do NOT bring this up for non-counselling students:
 1) College & course awareness — "Counselling-la entha entha college, entha order-la podanum-nu theriyuma ma? Entha courses kidaikkum/kidaikkathu-nu theriyuma? Top college, mid-level, autonomous college-ku evvalo cutoff venum-nu theriyuma?"
 2) Fee awareness — "Counselling-la seat kidaichaa antha college-la evvalo fees sollvanga-nu theriyuma?"
 3) Guidance & lock-in check — "Counselling-ku yaaravathu guide pannraangala? Vera yaaravathu ungakitta pesikittu irukaangala? Ore oru college-ku mattum-thaan wait pannreengala?" → Ore college mattum-naa namma vera options kudukka mudiyaathu, ithai marupadi verify pannu. Namma staff moolama vera yaaravathu already admission potirundhaa antha lead-ai vittudu ma.
@@ -2481,7 +2481,7 @@ Reply in Tanglish. Keep replies under 60 words (counselling coaching: up to 90 w
       await loadLeads();
       render();
       document.querySelectorAll("#voiceChat button[onclick='confirmVoiceAction()']").forEach(b => b.closest("div").remove());
-      appendVoiceMsg("ai", `Sema ma! ✅ ${lead.student}-ஓட ${field === "callResult" ? "status" : field} update ஆச்சு! CRM Anna sonna — done panniteengale kanna! 🎉`);
+      appendVoiceMsg("ai", `Sema ma! ✅ ${lead.student}-ஓட ${field === "callResult" ? "status" : field} update ஆச்சு! Sofiya sonna — done panniteengale kanna! 🎉`);
     }
 
     function cancelVoiceAction() {
@@ -2585,8 +2585,8 @@ ${buildSystemPrompt(ctx)}`;
         startProactiveCoaching();
       } catch(e) {
         const fallback = managerMsg
-          ? `வணக்கம் ${staffName} ma! Manager சொன்னாங்க — "${managerMsg}" CRM Anna sonna — follow pannunga ma! 💪`
-          : `வணக்கம் ${staffName} ma! CRM Anna ready! வேலையை ஆரம்பிக்கலாம் kanna! 💪`;
+          ? `வணக்கம் ${staffName} ma! Manager சொன்னாங்க — "${managerMsg}" Sofiya sonna — follow pannunga ma! 💪`
+          : `வணக்கம் ${staffName} ma! Sofiya ready! வேலையை ஆரம்பிக்கலாம் kanna! 💪`;
         appendVoiceMsg("ai", fallback);
         if (managerMsg) showManagerMsgReplyButton();
         startProactiveCoaching();
@@ -2697,7 +2697,7 @@ ${buildSystemPrompt(ctx)}`;
       const existing = cachedConfig.annaMessage || "";
       document.getElementById("annaMessageInput").value = existing;
       document.getElementById("annaMessageStatus").textContent = existing
-        ? "✅ தற்போது active message இருக்கு — staff login-ல் Anna சொல்லும்"
+        ? "✅ தற்போது active message இருக்கு — staff login-ல் Sofiya சொல்லும்"
         : "";
       document.getElementById("annaMessagePreview").style.display = "none";
       document.getElementById("annaMessageDialog").showModal();
@@ -2709,7 +2709,7 @@ ${buildSystemPrompt(ctx)}`;
       await loadConfig();
       cachedConfig.annaMessage = msg;
       await fetch("/api/config?branch=" + (sessionStorage.getItem("crmBranch") || "mannargudi"), { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(cachedConfig) });
-      document.getElementById("annaMessageStatus").textContent = "✅ Saved! Staff next login-ல் Anna சொல்லும்";
+      document.getElementById("annaMessageStatus").textContent = "✅ Saved! Staff next login-ல் Sofiya சொல்லும்";
       setTimeout(() => document.getElementById("annaMessageDialog").close(), 1500);
     }
 
@@ -2745,7 +2745,7 @@ ${buildSystemPrompt(ctx)}`;
       await fetch("/api/config?branch=" + (sessionStorage.getItem("crmBranch") || "mannargudi"), { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(cachedConfig) });
       document.getElementById("staffReplyDialog").close();
       appendVoiceMsg("user", msg);
-      appendVoiceMsg("ai", `Sema ma! ✅ உங்கள் reply Manager-க்கு போச்சு! CRM Anna sonna — follow pannunga ma!`);
+      appendVoiceMsg("ai", `Sema ma! ✅ உங்கள் reply Manager-க்கு போச்சு! Sofiya sonna — follow pannunga ma!`);
     }
 
     function recordStaffReply() {
@@ -2772,7 +2772,7 @@ ${buildSystemPrompt(ctx)}`;
       const allStaff = cachedConfig.staffList ? cachedConfig.staffList.map(s => s.name) : Object.keys(replies);
 
       if (!msg) {
-        list.innerHTML = `<div style="text-align:center;color:var(--muted);padding:20px">Active message இல்லை. முதல்ல Anna Message அனுப்புங்க.</div>`;
+        list.innerHTML = `<div style="text-align:center;color:var(--muted);padding:20px">Active message இல்லை. முதல்ல Sofiya Message அனுப்புங்க.</div>`;
       } else {
         list.innerHTML = `<div style="background:#fdf4ff;border:1px solid #e9d5ff;border-radius:10px;padding:10px;font-size:13px;color:#7c3aed;margin-bottom:4px">📢 Message: <b>${escapeHtml(msg)}</b></div>` +
           allStaff.map(name => {
