@@ -3530,7 +3530,7 @@ ${buildSystemPrompt(ctx)}`;
     async function updateStaffPin(index, pin) {
       const config = window._staffConfig;
       config.staffList[index].pin = pin;
-      await fetch("/api/config", {
+      await fetch("/api/config?branch=" + (sessionStorage.getItem("crmBranch") || "mannargudi"), {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(config)
@@ -4528,6 +4528,9 @@ ${buildSystemPrompt(ctx)}`;
         document.getElementById("loginScreen").style.display = "flex";
       }
     }
+
+    // Keepalive ping — prevents Glitch/free-tier servers from sleeping
+    setInterval(() => fetch('/api/info').catch(() => {}), 4 * 60 * 1000);
 
     init();
   </script>
