@@ -83,6 +83,12 @@ function setupAutoUpdater() {
   autoUpdater.autoDownload = true;
   autoUpdater.autoInstallOnAppQuit = true;
 
+  // Private GitHub repo — authenticate so update checks and downloads work
+  const token = process.env.GH_TOKEN || process.env.GITHUB_TOKEN || "";
+  if (token) {
+    autoUpdater.requestHeaders = { Authorization: `token ${token}` };
+  }
+
   autoUpdater.on("checking-for-update", () => {
     win && win.webContents.send("update-status", { type: "checking" });
   });
