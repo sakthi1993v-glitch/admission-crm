@@ -12,3 +12,8 @@ Release-v2/
 *.nsh
 *.blockmap
 builder-debug.yml
+fix.js
+restore-mannargudi.js
+icon.ico
+C*Temp*
+fly.toml

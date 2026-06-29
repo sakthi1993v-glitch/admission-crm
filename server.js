@@ -47,7 +47,7 @@ function defaultConfig() {
     branch2: {
       branchId: "trichy",
       branchName: "Trichy Branch",
-      managerUsername: process.env.BRANCH2_MANAGER_USERNAME || "sneka",
+      managerUsername: process.env.BRANCH2_MANAGER_USERNAME || "sineka",
       managerPassword: process.env.BRANCH2_MANAGER_PASSWORD || "",
       staffList: [],
       callResultOptions: ["New Lead","Interested","Call Later","No Response","Not Interested","Parent Need to Speak","Coming to College","Visited","Admission Done"]
@@ -61,8 +61,8 @@ function getBranchConfig(config, branchId) {
     return {
       branchId: "trichy",
       branchName: b2.branchName || "Trichy Branch",
-      managerUsername: b2.managerUsername || "sneka",
-      managerPassword: b2.managerPassword || "6107",
+      managerUsername: b2.managerUsername || "sineka",
+      managerPassword: b2.managerPassword || "sin6107",
       staffList: b2.staffList || [],
       callResultOptions: b2.callResultOptions || config.callResultOptions || [],
       theme: b2.theme || config.theme || "A",
@@ -411,6 +411,8 @@ Extract ALL student leads from this image. For each student, identify:
 - college (interested college name if mentioned)
 - callResult (based on feedback: "Interested", "Not Interested", "Call Later", "Coming to College", "Admission Done")
 - category (one of: Interested, Not Interested, Engineering, Medical, Arts, Counselling, Joined)
+- counselingUsername (student's counseling portal username/login ID if visible)
+- counselingPassword (student's counseling portal password if visible)
 - notes (any other feedback or remarks)
 
 Category rules:
@@ -423,7 +425,7 @@ Category rules:
 - Already joined somewhere → category: Joined
 
 IMPORTANT: Return ONLY a raw JSON array. No explanation, no markdown, no code blocks. Start your response with [ and end with ].
-Example: [{"name":"Arun","phone":"9876543210","area":"Salem","group":"Bio Maths","community":"MBC","firstGraduate":"Yes","course":"B.Tech","college":"","callResult":"Interested","category":"Interested","notes":""}]
+Example: [{"name":"Arun","phone":"9876543210","area":"Salem","group":"Bio Maths","community":"MBC","firstGraduate":"Yes","course":"B.Tech","college":"","callResult":"Interested","category":"Interested","counselingUsername":"","counselingPassword":"","notes":""}]
 
 If a field is not mentioned, use empty string "". Extract ALL students visible in the notes.`;
 
@@ -457,6 +459,17 @@ If a field is not mentioned, use empty string "". Extract ALL students visible i
         return sendJson(res, { error: "AI response parse panla. Again try பண்ணுங்க.", raw: result.slice(0, 500) }, 500);
       } catch (err) {
         return sendJson(res, { error: err.message }, 500);
+      }
+    }
+
+    if (url.pathname === "/api/update" && req.method === "POST") {
+      const { execSync } = require("child_process");
+      try {
+        const result = execSync("git pull", { cwd: __dirname, encoding: "utf8", timeout: 30000 });
+        const changed = !result.includes("Already up to date");
+        return sendJson(res, { ok: true, changed, message: result.trim() });
+      } catch (err) {
+        return sendJson(res, { ok: false, message: err.message }, 500);
       }
     }
 
